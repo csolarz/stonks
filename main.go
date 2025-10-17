@@ -7,20 +7,30 @@ import (
 )
 
 func main() {
-	metaStocks := domain.NewStock("META", 1)
-	googleStocks := domain.NewStock("GOOGL", 1)
+	stockA := domain.NewStock("AAPL", 1)
+	stockB := domain.NewStock("GOOGL", 1)
+	//stockC := domain.NewStock("MSFT", 200)
 
+	// Crear portafolio con 3 acciones
 	port := domain.NewPortfolio(100)
-	port.AddStock(metaStocks, 0.6)   // 60% META
-	port.AddStock(googleStocks, 0.4) // 40% GOOGL
+	port.AddStock(stockA, 0.6) // 50%
+	port.AddStock(stockB, 0.4) // 30%
 
-	fmt.Println("Portafolio inicial:")
+	// Initial rebalance for baseline
 	port.Rebalance()
 
-	// Cambios de precio
-	fmt.Println("Subida de META a 2")
-	metaStocks.SetValor(2) // Subida -> debe vender META y comprar GOOGL
+	//port.AddStock(stockC, 0.2) // 20%
 
-	fmt.Println("Subida de META a 1000")
-	metaStocks.SetValor(1000) // Subida -> debe vender META y comprar GOOGL
+	fmt.Println("🔹 Initial portfolio state:")
+	port.ShowSummary()
+
+	// Cambios simulados
+	fmt.Println("\n=== AAPL rises to 2 ===")
+	stockA.SetPrice(2)
+
+	fmt.Println("\n=== AAPL rises to 200 ===")
+	stockA.SetPrice(200)
+
+	//fmt.Println("\n=== MSFT rises to 250 ===")
+	//stockC.SetPrice(250)
 }
