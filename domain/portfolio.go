@@ -21,7 +21,7 @@ func NewPortfolio(initialAmount float64) *Portfolio {
 // Agrega una acción con su porcentaje al portafolio
 func (p *Portfolio) AddStock(s *Stock, percentage float64) {
 	p.stocks[s.Name()] = s
-	p.allocations[s.Name()] = &AllocatedStock{name: s.Name(), percentage: percentage}
+	p.allocations[s.Name()] = &AllocatedStock{name: s.Name(), rate: percentage}
 
 	// Compra inicial proporcional
 	investment := p.cash * percentage
@@ -54,7 +54,7 @@ func (p *Portfolio) Rebalance() {
 	// 1️⃣ Calcular cuánto debería tener cada acción
 	targetValues := make(map[string]float64)
 	for name, alloc := range p.allocations {
-		targetValues[name] = total * alloc.percentage
+		targetValues[name] = total * alloc.rate
 	}
 
 	// 2️⃣ Calcular diferencias y ajustar
