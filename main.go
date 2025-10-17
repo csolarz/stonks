@@ -27,9 +27,11 @@ func main() {
 	// Cambios simulados
 	fmt.Println("\n=== AAPL rises to 2 ===")
 	stockA.SetPrice(2)
+	port.ShowSummary()
 
 	fmt.Println("\n=== AAPL rises to 200 ===")
 	stockA.SetPrice(200)
+	port.ShowSummary()
 
 	//fmt.Println("\n=== MSFT rises to 250 ===")
 	//stockC.SetPrice(250)

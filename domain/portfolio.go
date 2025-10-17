@@ -33,7 +33,7 @@ func (p *Portfolio) AddStock(s *Stock, percentage float64) {
 
 // Método Updater
 func (p *Portfolio) Update(s *Stock) {
-	fmt.Printf("\n📈 Change detected in %s -> new price: %.2f\n", s.Name(), s.Price())
+	fmt.Printf("\n📈 Change detected in %s -> new price: %.3ff\n", s.Name(), s.Price())
 	p.Rebalance()
 }
 
@@ -49,7 +49,7 @@ func (p *Portfolio) totalValue() float64 {
 
 func (p *Portfolio) Rebalance() {
 	total := p.totalValue()
-	fmt.Printf("💰 Total portfolio value: %.2f (Cash: %.2f)\n", total, p.cash)
+	fmt.Printf("💰 Total portfolio value: %.3ff (Cash: %.3ff)\n", total, p.cash)
 
 	// 1️⃣ Calcular cuánto debería tener cada acción
 	targetValues := make(map[string]float64)
@@ -69,9 +69,9 @@ func (p *Portfolio) Rebalance() {
 			if p.cash >= diff {
 				p.quantities[name] += qty
 				p.cash -= diff
-				fmt.Printf("🟢 Buying %.2f of %s (%.2f USD)\n", qty, name, diff)
+				fmt.Printf("🟢 Buying %.3ff of %s (%.3ff USD)\n", qty, name, diff)
 			} else {
-				fmt.Printf("⚠️ Not enough cash to buy %.2f of %s\n", qty, name)
+				fmt.Printf("⚠️ Not enough cash to buy %.3ff of %s\n", qty, name)
 			}
 		} else if diff < 0 {
 			// Vender
@@ -79,12 +79,10 @@ func (p *Portfolio) Rebalance() {
 			if p.quantities[name] >= qty {
 				p.quantities[name] -= qty
 				p.cash += -diff
-				fmt.Printf("🔴 Selling %.2f of %s (%.2f USD)\n", qty, name, -diff)
+				fmt.Printf("🔴 Selling %.3ff of %s (%.3ff USD)\n", qty, name, -diff)
 			}
 		}
 	}
-
-	p.ShowSummary()
 }
 
 func (p *Portfolio) ShowSummary() {
@@ -96,11 +94,11 @@ func (p *Portfolio) ShowSummary() {
 	for name, stock := range p.stocks {
 		value := stock.Price() * p.quantities[name]
 		share := (value / total) * 100
-		fmt.Printf("%-10s %-10.2f %-10.2f %-12.2f %-10.2f%%\n",
+		fmt.Printf("%-10s %-10.3f %-10.3f %-12.3f %-10.3f%%\n",
 			name, stock.Price(), p.quantities[name], value, share)
 	}
 
-	fmt.Printf("\n💵 Cash available: %.2f\n", p.cash)
-	fmt.Printf("💼 Total portfolio value: %.2f\n", total)
+	fmt.Printf("\n💵 Cash available: %.3ff\n", p.cash)
+	fmt.Printf("💼 Total portfolio value: %.3ff\n", total)
 	fmt.Println("===============================================================")
 }
