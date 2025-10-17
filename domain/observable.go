@@ -1,11 +1,11 @@
 package domain
 
-// Updater defines the observer interface for stock updates
+// Updater representa al observador que reacciona a los cambios del sujeto
 type Updater interface {
 	Update(a *Stock)
 }
 
-// Subject defines the subject interface for managing observers
+// Subject representa al sujeto que notifica a sus observadores
 type Subject interface {
 	Subscribe(o Updater)
 	Unsubscribe(o Updater)

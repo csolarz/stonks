@@ -1,48 +1,45 @@
 package domain
 
 type Stock struct {
-	nombre       string
-	valor        float64
-	observadores []Updater
+	name     string
+	price    float64
+	updaters []Updater
 }
 
-func NewStock(nombre string, valor float64) *Stock {
-	return &Stock{
-		nombre: nombre,
-		valor:  valor,
-	}
+func NewStock(name string, price float64) *Stock {
+	return &Stock{name: name, price: price}
 }
 
-func (a *Stock) Name() string {
-	return a.nombre
+func (s *Stock) Name() string {
+	return s.name
 }
 
-func (a *Stock) Price() float64 {
-	return a.valor
+func (s *Stock) Price() float64 {
+	return s.price
 }
 
-// SetValor actualiza el precio y notifica a los observadores
-func (a *Stock) SetValor(valor float64) {
-	a.valor = valor
-	a.Notificar()
+// SetPrice actualiza el precio y notifica a los observadores
+func (s *Stock) SetPrice(price float64) {
+	s.price = price
+	s.Notify()
 }
 
-// Métodos de sujeto
-func (a *Stock) Register(o Updater) {
-	a.observadores = append(a.observadores, o)
+// Métodos del Subject
+func (s *Stock) Subscribe(u Updater) {
+	s.updaters = append(s.updaters, u)
 }
 
-func (a *Stock) Remover(o Updater) {
-	for i, obs := range a.observadores {
-		if obs == o {
-			a.observadores = append(a.observadores[:i], a.observadores[i+1:]...)
+func (s *Stock) Unsubscribe(u Updater) {
+	for i, obs := range s.updaters {
+		if obs == u {
+			s.updaters = append(s.updaters[:i], s.updaters[i+1:]...)
 			break
 		}
 	}
 }
 
-func (a *Stock) Notificar() {
-	for _, obs := range a.observadores {
-		obs.Update(a)
+func (s *Stock) Notify() {
+	for _, obs := range s.updaters {
+		obs.Update(s)
 	}
 }
