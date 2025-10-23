@@ -19,27 +19,36 @@ func NewPortfolio(initialAmount float64) *Portfolio {
 }
 
 // Agrega una acción con su porcentaje al portafolio
-func (p *Portfolio) AddStock(s *Stock, percentage float64) {
-	p.stocks[s.Name()] = s
-	p.allocations[s.Name()] = &AllocatedStock{name: s.Name(), rate: percentage}
+func (p *Portfolio) AddStock(s *Stock, percentage float64) error {
+	if percentage <= 0 || percentage > 1 || p.cash == 0 {
+		return fmt.Errorf("percentage or cash invalid")
+	}
 
-	// Compra inicial proporcional
-	investment := p.cash * percentage
-	qty := investment / s.Price()
-	p.quantities[s.Name()] = qty
-	p.cash -= investment
+	p.stocks[s.Name()] = s
+	p.allocations[s.Name()] = &AllocatedStock{
+		name: s.Name(),
+		rate: percentage,
+	}
+
 	s.Subscribe(p)
+
+	return nil
 }
 
 // Método Updater
-func (p *Portfolio) Update(s *Stock) {
-	fmt.Printf("\n📈 Change detected in %s -> new price: %.3ff\n", s.Name(), s.Price())
+func (p *Portfolio) Update(s any) {
+	stock, ok := s.(*Stock)
+	if !ok {
+		return
+	}
+
+	fmt.Printf("\n📈 Change detected in %s -> new price: %.3ff\n", stock.Name(), stock.Price())
 	p.Rebalance()
 }
 
 // ------------------ Lógica de rebalanceo ------------------
 
-func (p *Portfolio) totalValue() float64 {
+func (p *Portfolio) TotalValue() float64 {
 	total := p.cash
 	for name, stock := range p.stocks {
 		total += p.quantities[name] * stock.Price()
@@ -48,7 +57,7 @@ func (p *Portfolio) totalValue() float64 {
 }
 
 func (p *Portfolio) Rebalance() {
-	total := p.totalValue()
+	total := p.TotalValue()
 	fmt.Printf("💰 Total portfolio value: %.3ff (Cash: %.3ff)\n", total, p.cash)
 
 	// 1️⃣ Calcular cuánto debería tener cada acción
@@ -66,39 +75,15 @@ func (p *Portfolio) Rebalance() {
 		if diff > 0 {
 			// Comprar
 			qty := diff / stock.Price()
-			if p.cash >= diff {
-				p.quantities[name] += qty
-				p.cash -= diff
-				fmt.Printf("🟢 Buying %.3ff of %s (%.3ff USD)\n", qty, name, diff)
-			} else {
-				fmt.Printf("⚠️ Not enough cash to buy %.3ff of %s\n", qty, name)
-			}
+			p.quantities[name] += qty
+			p.cash -= diff
+			fmt.Printf("🟢 Buying %.3ff of %s (%.3ff USD)\n", qty, name, diff)
 		} else if diff < 0 {
 			// Vender
 			qty := (-diff) / stock.Price()
-			if p.quantities[name] >= qty {
-				p.quantities[name] -= qty
-				p.cash += -diff
-				fmt.Printf("🔴 Selling %.3ff of %s (%.3ff USD)\n", qty, name, -diff)
-			}
+			p.quantities[name] -= qty
+			p.cash += -diff
+			fmt.Printf("🔴 Selling %.3ff of %s (%.3ff USD)\n", qty, name, -diff)
 		}
 	}
-}
-
-func (p *Portfolio) ShowSummary() {
-	total := p.totalValue()
-	fmt.Println("\n📊 Current portfolio summary:")
-	fmt.Println("---------------------------------------------------------------")
-	fmt.Printf("%-10s %-10s %-10s %-12s %-12s\n", "Stock", "Price", "Qty", "Value", "Share")
-
-	for name, stock := range p.stocks {
-		value := stock.Price() * p.quantities[name]
-		share := (value / total) * 100
-		fmt.Printf("%-10s %-10.3f %-10.3f %-12.3f %-10.3f%%\n",
-			name, stock.Price(), p.quantities[name], value, share)
-	}
-
-	fmt.Printf("\n💵 Cash available: %.3ff\n", p.cash)
-	fmt.Printf("💼 Total portfolio value: %.3ff\n", total)
-	fmt.Println("===============================================================")
 }

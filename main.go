@@ -19,14 +19,14 @@ func main() {
 	port.Rebalance()
 
 	fmt.Println("🔹 Initial portfolio state:")
-	port.ShowSummary()
+	domain.ShowSummary(*port)
 
 	// Cambios simulados
 	fmt.Println("\n=== AAPL rises to 2 ===")
 	stockA.SetPrice(2)
-	port.ShowSummary()
+	domain.ShowSummary(*port)
 
 	fmt.Println("\n=== AAPL rises to 200 ===")
 	stockA.SetPrice(200)
-	port.ShowSummary()
+	domain.ShowSummary(*port)
 }

@@ -3,6 +3,8 @@ package domain
 import (
 	"math"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // Helper: comparar floats con margen de error
@@ -20,8 +22,11 @@ func TestPortfolioRebalanceMetaRises(t *testing.T) {
 	p.AddStock(meta, 0.6)  // 60%
 	p.AddStock(googl, 0.4) // 40%
 
+	// Rebalance inicial
+	p.Rebalance()
+
 	// Validar condiciones iniciales
-	total := p.totalValue()
+	total := p.TotalValue()
 	if !almostEqual(total, 100.0, 0.001) {
 		t.Errorf("Expected total 100.0, got %.2f", total)
 	}
@@ -31,7 +36,7 @@ func TestPortfolioRebalanceMetaRises(t *testing.T) {
 
 	// Validar nuevo valor total
 	expectedTotal := 160.0
-	newTotal := p.totalValue()
+	newTotal := p.TotalValue()
 	if !almostEqual(newTotal, expectedTotal, 0.001) {
 		t.Errorf("Expected total %.2f, got %.2f", expectedTotal, newTotal)
 	}
@@ -70,14 +75,21 @@ func TestPortfolioThreeStocksUpAndDown(t *testing.T) {
 	p.AddStock(googl, 0.3)
 	p.AddStock(msft, 0.2)
 
-	initialTotal := p.totalValue()
+	p.Rebalance()
+
+	assert.EqualValues(t, 5, p.quantities["META"])
+	assert.EqualValues(t, 3, p.quantities["GOOGL"])
+	assert.EqualValues(t, 2, p.quantities["MSFT"])
+	assert.EqualValues(t, 0, p.cash)
+
+	initialTotal := p.TotalValue()
 	if !almostEqual(initialTotal, 1000, 0.001) {
 		t.Errorf("Expected initial total 1000, got %.2f", initialTotal)
 	}
 
 	// ---- Caso 1: META sube de 100 a 150 ----
 	meta.SetPrice(150)
-	totalAfterMetaRise := p.totalValue()
+	totalAfterMetaRise := p.TotalValue()
 
 	if totalAfterMetaRise <= initialTotal {
 		t.Errorf("Expected portfolio to increase after META rises")
@@ -87,11 +99,13 @@ func TestPortfolioThreeStocksUpAndDown(t *testing.T) {
 	metaValue := p.quantities["META"] * meta.Price()
 	googlValue := p.quantities["GOOGL"] * googl.Price()
 	msftValue := p.quantities["MSFT"] * msft.Price()
-	total := p.totalValue()
+	total1 := p.TotalValue()
 
-	metaPct := metaValue / total
-	googlPct := googlValue / total
-	msftPct := msftValue / total
+	metaPct := metaValue / total1
+	googlPct := googlValue / total1
+	msftPct := msftValue / total1
+
+	assert.EqualValues(t, 0, p.cash)
 
 	if !almostEqual(metaPct, 0.5, 0.02) {
 		t.Errorf("Expected META ~50%%, got %.2f%%", metaPct*100)
@@ -105,7 +119,9 @@ func TestPortfolioThreeStocksUpAndDown(t *testing.T) {
 
 	// ---- Caso 2: GOOGL baja de 100 a 80 ----
 	googl.SetPrice(80)
-	totalAfterGooglDrop := p.totalValue()
+	totalAfterGooglDrop := p.TotalValue()
+
+	assert.EqualValues(t, 0, p.cash)
 
 	if totalAfterGooglDrop >= totalAfterMetaRise {
 		t.Errorf("Expected total to decrease after GOOGL drops")
@@ -115,11 +131,11 @@ func TestPortfolioThreeStocksUpAndDown(t *testing.T) {
 	metaValue = p.quantities["META"] * meta.Price()
 	googlValue = p.quantities["GOOGL"] * googl.Price()
 	msftValue = p.quantities["MSFT"] * msft.Price()
-	total = p.totalValue()
+	total2 := p.TotalValue()
 
-	metaPct = metaValue / total
-	googlPct = googlValue / total
-	msftPct = msftValue / total
+	metaPct = metaValue / total2
+	googlPct = googlValue / total2
+	msftPct = msftValue / total2
 
 	if !almostEqual(metaPct, 0.5, 0.02) {
 		t.Errorf("After drop, expected META ~50%%, got %.2f%%", metaPct*100)
@@ -131,9 +147,67 @@ func TestPortfolioThreeStocksUpAndDown(t *testing.T) {
 		t.Errorf("After drop, expected MSFT ~20%%, got %.2f%%", msftPct*100)
 	}
 
+	assert.EqualValues(t, 0, p.cash)
+
 	// Validar que no haya dinero perdido
 	sum := metaValue + googlValue + msftValue + p.cash
-	if !almostEqual(sum, total, 0.001) {
-		t.Errorf("Accounting error: expected total %.3f, got sum %.3f", total, sum)
+	if !almostEqual(sum, total2, 0.001) {
+		t.Errorf("Accounting error: expected total %.3f, got sum %.3f", total2, sum)
+	}
+}
+
+func TestPortfolio_AddStock(t *testing.T) {
+	tests := []struct {
+		name          string  // description of this test case
+		initialAmount float64 // initial cash in portfolio
+		// Named input parameters for target function.
+		s          *Stock
+		percentage float64
+		wantErr    bool
+	}{
+		// TODO: Add test cases.
+		{
+			name:          "valid percentage",
+			initialAmount: 1000,
+			s:             NewStock("AAPL", 150),
+			percentage:    0.5,
+			wantErr:       false,
+		},
+		{
+			name:          "percentage zero",
+			initialAmount: 1000,
+			s:             NewStock("AAPL", 150),
+			percentage:    0.0,
+			wantErr:       true,
+		},
+		{
+			name:          "percentage negative",
+			initialAmount: 1000,
+			s:             NewStock("AAPL", 150),
+			percentage:    -0.2,
+			wantErr:       true,
+		},
+		{
+			name:          "percentage over rated",
+			initialAmount: 1000,
+			s:             NewStock("AAPL", 150),
+			percentage:    1.5,
+			wantErr:       true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewPortfolio(tt.initialAmount)
+			gotErr := p.AddStock(tt.s, tt.percentage)
+			if gotErr != nil {
+				if !tt.wantErr {
+					t.Errorf("AddStock() failed: %v", gotErr)
+				}
+				return
+			}
+			if tt.wantErr {
+				t.Fatal("AddStock() succeeded unexpectedly")
+			}
+		})
 	}
 }
